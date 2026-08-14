@@ -1,0 +1,222 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: flames_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - flames-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: flames_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - flames-network
+
+  # One-off: runs Alembic migrations to head, then exits. api/celery_worker/
+  # celery_beat all wait for this to succeed before starting (Phase 2 §03),
+  # so the schema is always current before anything touches the database.
+  # Never --autogenerate here — only already-committed migration files.
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: flames_migrate
+    env_file: .env
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flames-network
+
+  # api, celery_worker, celery_beat, and flower all build from the same
+  # Dockerfile (Phase 2 §03: "same image as api") — only `command` and
+  # `environment.FLAMES_SERVICE_NAME` differ per service.
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: flames_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      FLAMES_SERVICE_NAME: api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./data:/app/data
+      - storage_data:/app/storage
+      - logs:/app/logs
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - flames-network
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      FLAMES_SERVICE_NAME: celery_worker
+    command:
+      [
+        "uv", "run", "celery", "-A", "app.scheduler.celery_app", "worker",
+        "-Q", "default,search,ai,gmail,notifications", "--loglevel=INFO",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./data:/app/data
+      - storage_data:/app/storage
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD", "uv", "run", "celery", "-A", "app.scheduler.celery_app", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - flames-network
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: flames_celery_beat
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      FLAMES_SERVICE_NAME: celery_beat
+    command: ["uv", "run", "celery", "-A", "app.scheduler.celery_app", "beat", "--loglevel=INFO"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery.*beat' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - flames-network
+
+  # Phase 4: the React dashboard, built to static assets and served by its
+  # own nginx (docker/../frontend/Dockerfile), sitting behind the main
+  # reverse proxy below like every other internal service.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: flames_frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flames-network
+
+  # Reverse proxy — only service with published ports (Phase 1 Part 2
+  # §12). Fronts both the React dashboard and the API.
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    container_name: flames_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flames-network
+
+  # Celery monitoring UI, run via our own image's `celery flower` command
+  # (Phase 2 §03: "same image as api") rather than the standalone mher/flower
+  # image. Dev only — start with `docker compose --profile dev up`. Not
+  # started by a plain `docker compose up`, and (per "only Nginx exposes
+  # ports externally") it publishes no host port — use `docker compose
+  # --profile dev port flower 5555` or a temporary port mapping to reach it.
+  flower:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: flames_flower
+    restart: unless-stopped
+    profiles: ["dev"]
+    env_file: .env
+    environment:
+      FLAMES_SERVICE_NAME: flower
+    command: ["uv", "run", "celery", "-A", "app.scheduler.celery_app", "flower", "--port=${FLOWER_PORT}"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - "5555"
+    networks:
+      - flames-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  storage_data:
+  logs:
+
+networks:
+  flames-network:
+    driver: bridge

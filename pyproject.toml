@@ -1,0 +1,27 @@
+[project]
+name = "flames-workspace"
+version = "0.1.0"
+description = "Flames — autonomous job search, application, and tracking assistant"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv.workspace]
+members = ["backend", "shared"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+# Alembic autogenerates these — hand-editing to satisfy lint would defeat
+# the point of `alembic revision --autogenerate`.
+extend-exclude = ["backend/migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# UP046/UP047: PEP 695 generic syntax (`class Foo[T]:`) is 3.12-only.
+# Docker runs 3.12, but local dev venvs on this machine may only have
+# 3.11 available — Generic[T]/TypeVar stays importable on both.
+ignore = ["UP046", "UP047"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true

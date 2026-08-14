@@ -1,0 +1,213 @@
+# Production deployment — a standalone file (not merged with
+# docker-compose.yml) so there's no ambiguity between "build locally" and
+# "pull a released image". Every service here pulls a prebuilt image
+# instead of building from source; .github/workflows/deploy.yml builds
+# and pushes those images on every push to main.
+#
+# On the target host:
+#   cp .env.example .env         # fill in real production values
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Full runbook: docs/deployment.md
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: flames_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - flames-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: flames_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - flames-network
+
+  migrate:
+    image: ${IMAGE_NAME}-backend:${IMAGE_TAG:-latest}
+    container_name: flames_migrate
+    env_file: .env
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - flames-network
+
+  api:
+    image: ${IMAGE_NAME}-backend:${IMAGE_TAG:-latest}
+    container_name: flames_api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      FLAMES_SERVICE_NAME: api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./data:/app/data
+      - storage_data:/app/storage
+      - logs:/app/logs
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - flames-network
+
+  celery_worker:
+    image: ${IMAGE_NAME}-backend:${IMAGE_TAG:-latest}
+    container_name: flames_celery_worker
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      FLAMES_SERVICE_NAME: celery_worker
+    command:
+      [
+        "uv", "run", "celery", "-A", "app.scheduler.celery_app", "worker",
+        "-Q", "default,search,ai,gmail,notifications", "--loglevel=INFO",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - ./data:/app/data
+      - storage_data:/app/storage
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD", "uv", "run", "celery", "-A", "app.scheduler.celery_app", "inspect", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - flames-network
+
+  celery_beat:
+    image: ${IMAGE_NAME}-backend:${IMAGE_TAG:-latest}
+    container_name: flames_celery_beat
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      FLAMES_SERVICE_NAME: celery_beat
+    command: ["uv", "run", "celery", "-A", "app.scheduler.celery_app", "beat", "--loglevel=INFO"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery.*beat' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - flames-network
+
+  frontend:
+    image: ${IMAGE_NAME}-frontend:${IMAGE_TAG:-latest}
+    container_name: flames_frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flames-network
+
+  nginx:
+    image: ${IMAGE_NAME}-nginx:${IMAGE_TAG:-latest}
+    container_name: flames_nginx
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flames-network
+
+  # The only service with published ports — terminates TLS (automatic
+  # Let's Encrypt via DOMAIN/ACME_EMAIL below) and reverse-proxies
+  # everything to nginx. docker-compose.yml (local/dev) has no equivalent:
+  # plain HTTP on localhost has no certificate to issue for.
+  caddy:
+    image: caddy:2-alpine
+    container_name: flames_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      nginx:
+        condition: service_healthy
+    networks:
+      - flames-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  storage_data:
+  logs:
+  caddy_data:
+  caddy_config:
+
+networks:
+  flames-network:
+    driver: bridge

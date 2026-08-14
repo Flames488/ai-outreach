@@ -1,0 +1,18 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode gzip
+
+	# Everything — API (/api/) and the dashboard (/) — is already routed
+	# by nginx (docker/nginx/nginx.conf); Caddy only adds TLS in front of
+	# it and never duplicates that routing table.
+	reverse_proxy nginx:80
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+}

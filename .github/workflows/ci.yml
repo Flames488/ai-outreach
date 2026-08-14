@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - run: uv sync --directory backend
+      - run: uv run --directory backend ruff check .
+      - run: uv run --directory backend ruff format --check .
+
+  typecheck:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - run: uv sync --directory backend
+      - run: uv run --directory backend mypy app
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: flames_test
+          POSTGRES_PASSWORD: flames_test
+          POSTGRES_DB: flames_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U flames_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SECRET_KEY: ci-test-secret-key
+      JWT_SECRET: ci-test-jwt-secret
+      POSTGRES_USER: flames_test
+      POSTGRES_PASSWORD: flames_test
+      POSTGRES_DB: flames_test
+      DATABASE_URL: postgresql+asyncpg://flames_test:flames_test@localhost:5432/flames_test
+      REDIS_URL: redis://localhost:6379/0
+      MASTER_ENCRYPTION_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA9
+      SEED_ADMIN_PASSWORD: ci-test-seed-admin-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+      - run: uv sync --directory backend
+      - run: uv run --directory backend alembic upgrade head
+      - run: uv run --directory backend pytest -v
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [test, typecheck]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build api image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: false
+          tags: flames-backend:ci
