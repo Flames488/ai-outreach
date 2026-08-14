@@ -30,7 +30,6 @@ from app.ai.registry import get_ai_provider
 from app.config.settings import get_settings
 from app.core.exceptions import FlamesAPIError
 from app.core.rate_limit import enforce_rate_limit
-from app.models.ai_usage_log import AIUsageLog
 from app.repositories.ai_usage_log_repository import AIUsageLogRepository
 
 T = TypeVar("T")
@@ -115,15 +114,17 @@ class AIService:
                 504, ErrorCode.AI_PROVIDER_TIMEOUT, "AI provider request timed out"
             ) from exc
         finally:
+            # BaseRepository.create(**data) builds the model itself — it
+            # was previously (wrongly) passed an already-constructed
+            # AIUsageLog as a single positional arg, which raised a
+            # TypeError here on every single AI call, successful or not.
             await self._usage_logs.create(
-                AIUsageLog(
-                    provider=self._provider_name,
-                    model=self._model,
-                    task_type=task_type,
-                    tokens_used=None,
-                    cost=None,
-                    success=success,
-                )
+                provider=self._provider_name,
+                model=self._model,
+                task_type=task_type,
+                tokens_used=None,
+                cost=None,
+                success=success,
             )
             await self._db.commit()
 
