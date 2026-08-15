@@ -60,7 +60,6 @@ jobs:
       POSTGRES_DB: flames_test
       DATABASE_URL: postgresql+asyncpg://flames_test:flames_test@localhost:5432/flames_test
       REDIS_URL: redis://localhost:6379/0
-      MASTER_ENCRYPTION_KEY: Yi1tZ3xqVfc3au9eAl3WxP0uhhbQhPJ04MGQzYwAuJM=
       SEED_ADMIN_PASSWORD: ci-test-seed-admin-password
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +67,9 @@ jobs:
         with:
           version: "latest"
       - run: uv sync --directory backend
+      - name: Generate an ephemeral test encryption key
+        run: |
+          echo "MASTER_ENCRYPTION_KEY=$(uv run --directory backend python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" >> "$GITHUB_ENV"
       - run: uv run --directory backend alembic upgrade head
       - run: uv run --directory backend pytest -v
 
