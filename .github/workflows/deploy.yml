@@ -10,8 +10,27 @@ on:
   workflow_dispatch: {}
 
 jobs:
+  # workflow_run's `branches` filter above only reliably applies when the
+  # source CI run itself was push-triggered — a CI run triggered by
+  # pull_request (any branch) still fires this workflow regardless, so
+  # build-and-push re-checks head_branch itself. Without this gate job,
+  # every PR's CI completion produced a deploy run with zero jobs
+  # executed, which GitHub reports as a workflow failure ("no jobs were
+  # run") rather than skipped — misleading noise on every PR, not a real
+  # failure. This job always runs (and always succeeds) so the overall
+  # deploy workflow reports its real outcome instead.
+  gate:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - run: |
+          echo "source event: ${{ github.event.workflow_run.event || github.event_name }}"
+          echo "source branch: ${{ github.event.workflow_run.head_branch || 'n/a' }}"
+          echo "source conclusion: ${{ github.event.workflow_run.conclusion || 'n/a' }}"
+
   build-and-push:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    needs: gate
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
