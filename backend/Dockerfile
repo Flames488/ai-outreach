@@ -28,10 +28,16 @@ COPY pyproject.toml ./
 COPY shared/ shared/
 COPY backend/ backend/
 
+# uv sync/run must run from backend/, not the workspace root — the root
+# pyproject.toml has no dependencies of its own (it only declares the
+# workspace members). Running from /app installed just that empty root
+# project, so `playwright` (declared in backend/pyproject.toml) never
+# made it into .venv and `playwright install` had nothing to invoke.
+WORKDIR /app/backend
+
 RUN uv sync
 RUN uv run playwright install --with-deps chromium
 
-WORKDIR /app/backend
 EXPOSE 8000
 
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
