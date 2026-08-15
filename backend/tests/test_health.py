@@ -1,4 +1,24 @@
+from collections.abc import Generator
+
+import pytest
+from app.main import app
 from fastapi.testclient import TestClient
+
+
+@pytest.fixture(scope="module")
+def client() -> Generator[TestClient, None, None]:
+    """Overrides conftest's function-scoped `client`: this file is the only
+    one that sends real requests through the ASGI app (the rate-limit
+    middleware touches the module-level `redis_client`). A bare
+    `TestClient(app)` opens a brand-new event loop per request; reusing
+    that loop-bound Redis connection from a since-closed loop on the next
+    request raises `RuntimeError: Event loop is closed`. Scoping to the
+    module and entering as a context manager keeps one loop alive for
+    every request in this file, matching how the app actually runs (one
+    persistent loop) instead of tearing one down after each call.
+    """
+    with TestClient(app) as c:
+        yield c
 
 
 def test_health_is_always_ok(client: TestClient) -> None:
