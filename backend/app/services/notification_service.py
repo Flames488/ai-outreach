@@ -41,6 +41,8 @@ class NotificationService:
         level: NotificationLevel = NotificationLevel.INFO,
         user_id: uuid.UUID | None = None,
         notification_type: str = "general",
+        action_url: str | None = None,
+        action_label: str | None = None,
     ) -> bool:
         if level != NotificationLevel.SYSTEM and user_id is not None:
             profile = await self._user_profiles.get_by_user_id(user_id)
@@ -56,7 +58,10 @@ class NotificationService:
             channel=NotificationChannel.TELEGRAM,
             status="pending",
         )
-        sent = await self._provider.send(NotificationPayload(title=title, body=body, level=level))
+        metadata = {"action_url": action_url, "action_label": action_label} if action_url else {}
+        sent = await self._provider.send(
+            NotificationPayload(title=title, body=body, level=level, metadata=metadata)
+        )
         record.status = "sent" if sent else "failed"
         record.sent_at = datetime.now(UTC) if sent else None
         await self._db.commit()

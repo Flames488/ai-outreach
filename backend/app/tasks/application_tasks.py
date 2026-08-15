@@ -21,7 +21,7 @@ import asyncio
 import logging
 import uuid
 
-from flames_shared.enums import ApplicationStatus
+from flames_shared.enums import ApplicationStatus, NotificationLevel
 
 from app.database.session import session_scope
 from app.playwright.browser_engine import PlaywrightTransientError
@@ -33,6 +33,7 @@ from app.repositories.user_repository import UserRepository
 from app.scheduler.celery_app import celery_app
 from app.scheduler.pause import is_paused
 from app.services.feature_flag_service import get_feature_flag_service
+from app.services.notification_service import get_notification_service
 from app.services.playwright_dry_run_service import get_playwright_dry_run_service
 
 logger = logging.getLogger(__name__)
@@ -122,6 +123,17 @@ async def _apply_to_job(application_id: str) -> None:
         application.error_message = record.reason
         application.cv_version_id = cv.id
         await db.commit()
+
+        if record.status == ApplicationStatus.PENDING_VERIFICATION:
+            await get_notification_service(db).notify(
+                title="Application ready to review",
+                body=f"{job.title}\n\nFilled and ready — open it to review and submit.",
+                level=NotificationLevel.SUCCESS,
+                user_id=application.user_id,
+                notification_type="application_ready_for_review",
+                action_url=job.application_url,
+                action_label="Open application",
+            )
         logger.info(
             "Application %s -> %s (%s)",
             application_id,
