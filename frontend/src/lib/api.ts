@@ -16,6 +16,7 @@ import type {
   Settings,
   TokenPair,
   User,
+  UserProfile,
 } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api/v1";
@@ -139,6 +140,8 @@ export const api = {
   },
 
   me: () => request<User>("/users/me"),
+  updateProfile: (body: Partial<UserProfile>) =>
+    request<User>("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
 
   dashboard: {
     summary: () => request<DashboardSummary>("/dashboard"),

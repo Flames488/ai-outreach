@@ -8,6 +8,7 @@ import {
   Mail,
   SlidersHorizontal,
   Settings as SettingsIcon,
+  User as UserIcon,
   LogOut,
   Menu,
   X,
@@ -22,6 +23,7 @@ const navItems = [
   { to: "/applications", label: "Applications", icon: Send },
   { to: "/emails", label: "Emails", icon: Mail },
   { to: "/rules", label: "Rules", icon: SlidersHorizontal },
+  { to: "/profile", label: "Profile", icon: UserIcon },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 

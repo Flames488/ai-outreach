@@ -10,6 +10,7 @@ import { JobsPage } from "./pages/JobsPage";
 import { ApplicationsPage } from "./pages/ApplicationsPage";
 import { EmailsPage } from "./pages/EmailsPage";
 import { RulesPage } from "./pages/RulesPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
@@ -38,6 +39,7 @@ function App() {
                   <Route path="applications" element={<ApplicationsPage />} />
                   <Route path="emails" element={<EmailsPage />} />
                   <Route path="rules" element={<RulesPage />} />
+                  <Route path="profile" element={<ProfilePage />} />
                   <Route path="settings" element={<SettingsPage />} />
                 </Route>
               </Route>
