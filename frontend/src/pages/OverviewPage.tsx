@@ -52,13 +52,13 @@ export function OverviewPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Overview</h1>
           <p className="mt-1 text-sm text-slate-500">Live snapshot of your job search pipeline.</p>
         </div>
         <button
-          className="btn-primary"
+          className="btn-primary w-full sm:w-auto"
           disabled={triggerSearch.isPending}
           onClick={() => triggerSearch.mutate()}
         >

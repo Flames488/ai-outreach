@@ -47,7 +47,7 @@ export function EmailsPage() {
             </div>
           ))}
 
-          <div className="flex items-center justify-between px-5 py-3 text-sm text-slate-500">
+          <div className="flex flex-col gap-3 px-5 py-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
             <span>
               Showing {offset + 1}–{offset + emailsQuery.data.length}
             </span>

@@ -72,7 +72,8 @@ export function JobsPage() {
 
       {jobsQuery.data && jobsQuery.data.length > 0 && (
         <div className="card overflow-hidden">
-          <table className="w-full text-left text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-medium">Title</th>
@@ -107,8 +108,9 @@ export function JobsPage() {
               ))}
             </tbody>
           </table>
+          </div>
 
-          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-sm text-slate-500">
+          <div className="flex flex-col gap-3 border-t border-slate-200 px-4 py-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
             <span>
               Showing {offset + 1}–{offset + jobsQuery.data.length}
             </span>

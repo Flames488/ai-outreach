@@ -45,14 +45,14 @@ export function RulesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Rules</h1>
           <p className="mt-1 text-sm text-slate-500">
             Critical/required rules gate auto-apply; preference rules only affect ranking.
           </p>
         </div>
-        <button className="btn-primary" onClick={() => setShowForm(true)}>
+        <button className="btn-primary w-full sm:w-auto" onClick={() => setShowForm(true)}>
           <Plus className="h-4 w-4" />
           New rule
         </button>
@@ -180,7 +180,7 @@ function NewRuleModal({ onClose }: { onClose: () => void }) {
           </select>
         </div>
 
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           <div>
             <label className="label">Field</label>
             <select className="input" value={field} onChange={(e) => setField(e.target.value)}>
