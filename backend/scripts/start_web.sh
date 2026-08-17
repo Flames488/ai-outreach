@@ -10,5 +10,6 @@
 # a host (like Render's free tier) with no Shell/Pre-Deploy Command
 # access to run it by hand.
 set -e
+uv run alembic upgrade head
 uv run python scripts/seed.py
 exec uv run uvicorn app.main:app --host 0.0.0.0 --port "$PORT"
