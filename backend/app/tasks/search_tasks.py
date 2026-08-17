@@ -26,15 +26,20 @@ def search_all_providers() -> None:
 
 
 @track_scheduled_task("search_all_providers")
-async def _search_all_providers() -> None:
+async def _search_all_providers() -> int:
+    """Returns the number of jobs ingested — 0 whenever nothing ran
+    (lock contention, paused), never None, so callers that want a count
+    (e.g. the free-tier synchronous /jobs/search-sync route) don't have
+    to guess why."""
     async with task_lock("search_all_providers", ttl_seconds=_LOCK_TTL_SECONDS) as acquired:
         if not acquired:
             logger.info("search_all_providers already running elsewhere; skipping")
-            return
+            return 0
         async with session_scope() as db:
             if await is_paused(db):
                 logger.info("Operations paused via /pause; skipping search_all_providers")
-                return
+                return 0
             job_service = get_job_service(db)
             jobs = await job_service.search_all()
             logger.info("Ingested %d job(s) this search cycle", len(jobs))
+            return len(jobs)

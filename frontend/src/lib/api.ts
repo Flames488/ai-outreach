@@ -158,6 +158,11 @@ export const api = {
     }) => request<Job[]>(`/jobs${qs(params)}`),
     get: (id: string) => request<JobDetail>(`/jobs/${id}`),
     triggerSearch: () => request<{ task_id: string }>("/jobs/search", { method: "POST" }),
+    // No Celery worker in this deployment (e.g. Render's free tier has no
+    // free Background Worker plan) — runs search + scoring in-process
+    // instead, so it can take a while. See the backend route's docstring.
+    triggerSearchSync: () =>
+      request<{ jobs_found: number }>("/jobs/search-sync", { method: "POST" }),
   },
 
   applications: {

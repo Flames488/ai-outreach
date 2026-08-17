@@ -74,8 +74,34 @@ async def trigger_search(
     _: Annotated[User, Depends(get_current_user)],
 ) -> SuccessResponse[dict]:
     """Triggers a Celery search task and returns immediately (Phase 2 §55
-    /§72 — the API never blocks on provider calls)."""
+    /§72 — the API never blocks on provider calls). Requires an actual
+    Celery worker consuming the queue — see /search-sync if none exists
+    in this deployment."""
     from app.tasks.search_tasks import search_all_providers
 
     task = search_all_providers.delay()
     return SuccessResponse(message="Job search queued.", data={"task_id": task.id})
+
+
+@router.post("/search-sync", response_model=SuccessResponse[dict])
+async def trigger_search_sync(
+    _: Annotated[User, Depends(get_current_user)],
+) -> SuccessResponse[dict]:
+    """Runs search + AI scoring synchronously, in-process, instead of via
+    Celery — for deployments with no worker to consume /search's queue
+    (Render's free tier has no free Background Worker plan; this route
+    exists so search still works there). Blocks the request for the
+    duration, which can be tens of seconds to a few minutes depending on
+    how many jobs need scoring — that's the deliberate trade-off for not
+    needing a paid always-on process. Safe to call again if it times out
+    client-side: both steps only ever touch NEW jobs, so a second call
+    picks up wherever the first left off rather than redoing work."""
+    from app.tasks.ai_tasks import _score_pending_jobs
+    from app.tasks.search_tasks import _search_all_providers
+
+    found = await _search_all_providers()
+    await _score_pending_jobs()
+    return SuccessResponse(
+        message=f"Search complete: {found} new job(s) found and scored.",
+        data={"jobs_found": found},
+    )

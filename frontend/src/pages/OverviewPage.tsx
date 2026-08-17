@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Briefcase, CheckCircle2, Clock, Loader2, Mail, Search, Sparkles } from "lucide-react";
 import {
   Bar,
@@ -27,9 +27,17 @@ const JOB_STATUS_COLORS: Record<string, string> = {
 };
 
 export function OverviewPage() {
+  const queryClient = useQueryClient();
   const summaryQuery = useQuery({ queryKey: ["dashboard-summary"], queryFn: api.dashboard.summary });
   const statsQuery = useQuery({ queryKey: ["dashboard-stats"], queryFn: api.dashboard.stats });
-  const triggerSearch = useMutation({ mutationFn: api.jobs.triggerSearch });
+  const triggerSearch = useMutation({
+    mutationFn: api.jobs.triggerSearchSync,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    },
+  });
 
   if (summaryQuery.isLoading || statsQuery.isLoading) return <LoadingState />;
   if (summaryQuery.isError || statsQuery.isError || !summaryQuery.data || !statsQuery.data) {
@@ -57,18 +65,29 @@ export function OverviewPage() {
           <h1 className="text-2xl font-semibold text-slate-900">Overview</h1>
           <p className="mt-1 text-sm text-slate-500">Live snapshot of your job search pipeline.</p>
         </div>
-        <button
-          className="btn-primary w-full sm:w-auto"
-          disabled={triggerSearch.isPending}
-          onClick={() => triggerSearch.mutate()}
-        >
-          {triggerSearch.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Search className="h-4 w-4" />
+        <div className="flex flex-col items-stretch gap-1.5 sm:items-end">
+          <button
+            className="btn-primary w-full sm:w-auto"
+            disabled={triggerSearch.isPending}
+            onClick={() => triggerSearch.mutate()}
+          >
+            {triggerSearch.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Search className="h-4 w-4" />
+            )}
+            {triggerSearch.isPending
+              ? "Searching…"
+              : triggerSearch.isSuccess
+                ? `Found ${triggerSearch.data.jobs_found} new job(s)`
+                : "Run job search"}
+          </button>
+          {triggerSearch.isPending && (
+            <p className="text-xs text-slate-400">
+              Can take a minute or two — searching every provider and scoring new jobs.
+            </p>
           )}
-          {triggerSearch.isSuccess ? "Search queued" : "Run job search"}
-        </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
