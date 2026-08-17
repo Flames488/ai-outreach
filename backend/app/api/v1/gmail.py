@@ -11,11 +11,10 @@ from flames_shared.enums import ErrorCode
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_email_service_dep
-from app.auth.security import create_access_token, decode_access_token
 from app.config.settings import get_settings
 from app.core.exceptions import FlamesAPIError
 from app.database.session import get_db
-from app.gmail.oauth import build_consent_url, exchange_code_for_credentials
+from app.gmail.oauth import build_consent_url, decode_state, exchange_code_for_credentials
 from app.models.user import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.envelope import SuccessResponse
@@ -31,23 +30,23 @@ async def connect_gmail(
 ) -> SuccessResponse[GmailConnectResponse]:
     """Builds the Google consent URL — the frontend redirects the user
     there; Google redirects back to `/gmail/callback`. The current user's
-    identity travels via `state`, not a header — see build_consent_url's
-    docstring for why."""
-    url = build_consent_url(state=create_access_token(str(user.id), user.role))
+    identity (and the PKCE code_verifier) travel via `state`, not a
+    header — see build_consent_url's docstring for why."""
+    url = build_consent_url(user_id=str(user.id))
     return SuccessResponse(
         message="Gmail consent URL generated.", data=GmailConnectResponse(consent_url=url)
     )
 
 
-async def _user_from_state(state: str, db: AsyncSession) -> User:
-    payload = decode_access_token(state)
-    user_id = payload.get("sub") if payload else None
-    if not isinstance(user_id, str):
+async def _user_from_state(state: str, db: AsyncSession) -> tuple[User, str]:
+    decoded = decode_state(state)
+    if decoded is None:
         raise FlamesAPIError(401, ErrorCode.AUTH_INVALID_TOKEN, "Invalid or expired state")
+    user_id, code_verifier = decoded
     user = await UserRepository(db).get(uuid.UUID(user_id))
     if user is None or not user.is_active:
         raise FlamesAPIError(401, ErrorCode.AUTH_INVALID_TOKEN, "Invalid or expired state")
-    return user
+    return user, code_verifier
 
 
 @router.get("/callback", response_model=None)
@@ -68,9 +67,9 @@ async def gmail_callback(
     instead of leaving it stranded on this endpoint's raw JSON — that
     URL is optional config, so this degrades to returning JSON directly
     if it's unset rather than guessing a wrong redirect target."""
-    user = await _user_from_state(state, db)
+    user, code_verifier = await _user_from_state(state, db)
     try:
-        credentials = exchange_code_for_credentials(code)
+        credentials = exchange_code_for_credentials(code, code_verifier)
     except Exception as exc:
         raise FlamesAPIError(
             400, ErrorCode.GMAIL_AUTH_FAILED, f"OAuth exchange failed: {exc}"
