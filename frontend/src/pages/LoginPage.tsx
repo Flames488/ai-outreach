@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { Eye, EyeOff, Flame, Loader2 } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { ApiError } from "../lib/api";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 export function LoginPage() {
   const { login, isAuthenticated, isLoading } = useAuth();
@@ -30,7 +31,10 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-white">

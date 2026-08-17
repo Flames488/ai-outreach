@@ -83,12 +83,18 @@ export function OverviewPage() {
           <h2 className="mb-4 text-sm font-semibold text-slate-700">Jobs by status</h2>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={jobStatusData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="status" tick={{ fontSize: 12 }} stroke="#94a3b8" />
-              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} stroke="#94a3b8" />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--slate-100)" />
+              <XAxis dataKey="status" tick={{ fontSize: 12, fill: "var(--slate-500)" }} stroke="var(--slate-400)" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "var(--slate-500)" }} stroke="var(--slate-400)" />
               <Tooltip
-                cursor={{ fill: "#f8fafc" }}
-                contentStyle={{ borderRadius: 8, borderColor: "#e2e8f0", fontSize: 12 }}
+                cursor={{ fill: "var(--slate-50)" }}
+                contentStyle={{
+                  borderRadius: 8,
+                  borderColor: "var(--slate-200)",
+                  backgroundColor: "var(--surface-white)",
+                  color: "var(--slate-900)",
+                  fontSize: 12,
+                }}
               />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {jobStatusData.map((entry) => (
@@ -120,7 +126,15 @@ export function OverviewPage() {
                     <Cell key={entry.name} fill={APP_COLORS[index % APP_COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ borderRadius: 8, borderColor: "#e2e8f0", fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    borderRadius: 8,
+                    borderColor: "var(--slate-200)",
+                    backgroundColor: "var(--surface-white)",
+                    color: "var(--slate-900)",
+                    fontSize: 12,
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           )}

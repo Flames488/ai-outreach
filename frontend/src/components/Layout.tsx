@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useAuth } from "../lib/auth";
+import { ThemeToggle } from "./ThemeToggle";
 
 const navItems = [
   { to: "/", label: "Overview", icon: LayoutDashboard, end: true },
@@ -59,6 +60,10 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       <div className="border-t border-slate-200 p-3">
+        <div className="mb-2 flex items-center justify-between px-1">
+          <span className="text-xs font-medium text-slate-400">Theme</span>
+          <ThemeToggle />
+        </div>
         <div className="flex items-center gap-3 rounded-lg px-3 py-2">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xs font-semibold text-slate-700">
             {(user?.first_name?.[0] ?? user?.email[0] ?? "?").toUpperCase()}
@@ -96,7 +101,7 @@ export function Layout() {
       {mobileNavOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
-            className="absolute inset-0 bg-slate-900/40"
+            className="absolute inset-0 bg-black/40"
             onClick={() => setMobileNavOpen(false)}
           />
           <aside className="relative flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-xl">
@@ -122,12 +127,13 @@ export function Layout() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-brand-600 text-white">
               <Flame className="h-3.5 w-3.5" />
             </div>
             <span className="text-base font-semibold text-slate-900">Flames</span>
           </div>
+          <ThemeToggle />
         </header>
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden">

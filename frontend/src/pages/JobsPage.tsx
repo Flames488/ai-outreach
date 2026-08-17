@@ -151,7 +151,7 @@ function JobDetailDrawer({ jobId, onClose }: { jobId: string; onClose: () => voi
   });
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-slate-900/30" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex justify-end bg-black/30" onClick={onClose}>
       <div
         className="h-full w-full max-w-lg overflow-y-auto bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}

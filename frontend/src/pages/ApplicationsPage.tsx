@@ -131,7 +131,7 @@ function ApplicationDetailDrawer({ id, onClose }: { id: string; onClose: () => v
   });
 
   return (
-    <div className="fixed inset-0 z-40 flex justify-end bg-slate-900/30" onClick={onClose}>
+    <div className="fixed inset-0 z-40 flex justify-end bg-black/30" onClick={onClose}>
       <div
         className="h-full w-full max-w-lg overflow-y-auto bg-white shadow-xl"
         onClick={(e) => e.stopPropagation()}

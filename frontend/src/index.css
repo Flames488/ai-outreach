@@ -2,9 +2,56 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Three themes, one neutral ramp: every `slate-*`/`white` utility class
+   already used across the app resolves through these variables, so
+   switching theme needs no per-page changes. 50 = page background,
+   900 = strongest text — inverted in dark mode, since the same classes
+   (bg-slate-50, text-slate-900, ...) need opposite lightness there. */
+:root {
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --surface-white: #ffffff;
+}
+
+[data-theme="cream"] {
+  --slate-50: #faf6ec;
+  --slate-100: #f3ead9;
+  --slate-200: #e8dbc0;
+  --slate-300: #d8c6a3;
+  --slate-400: #b39d7a;
+  --slate-500: #92805f;
+  --slate-600: #6f5f47;
+  --slate-700: #524534;
+  --slate-800: #3a3122;
+  --slate-900: #221c14;
+  --surface-white: #fffdf7;
+}
+
+[data-theme="dark"] {
+  --slate-50: #12151a;
+  --slate-100: #1a1e25;
+  --slate-200: #2a2f38;
+  --slate-300: #394050;
+  --slate-400: #6b7280;
+  --slate-500: #8b93a1;
+  --slate-600: #a7afbc;
+  --slate-700: #c3cad4;
+  --slate-800: #dde2e8;
+  --slate-900: #f1f5f9;
+  --surface-white: #1a1e25;
+}
+
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-slate-50 text-slate-900 antialiased transition-colors duration-200;
   }
 }
 
