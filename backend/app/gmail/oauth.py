@@ -31,10 +31,14 @@ def _build_flow() -> Flow:
     )
 
 
-def build_consent_url() -> str:
+def build_consent_url(state: str) -> str:
+    """`state` round-trips through Google unchanged and is how
+    `/gmail/callback` — a plain browser redirect Google makes, which can
+    never carry an Authorization header — knows which user is connecting
+    (see app/api/v1/gmail.py)."""
     flow = _build_flow()
     url, _state = flow.authorization_url(
-        access_type="offline", prompt="consent", include_granted_scopes="true"
+        access_type="offline", prompt="consent", include_granted_scopes="true", state=state
     )
     return url
 

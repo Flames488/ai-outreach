@@ -67,6 +67,11 @@ class Settings(BaseSettings):
     # real origin (the dashboard's own) in production instead of relying
     # on that.
     cors_allowed_origins: str = Field(default="*", alias="CORS_ALLOWED_ORIGINS")
+    # Where the dashboard is served — used only to redirect the browser
+    # back there after the Gmail OAuth consent flow. Left blank, that
+    # callback falls back to returning its JSON envelope directly rather
+    # than guessing a URL.
+    frontend_url: str = Field(default="", alias="FRONTEND_URL")
 
     # ---- Database ----
     postgres_db: str = Field(default="flames", alias="POSTGRES_DB")
