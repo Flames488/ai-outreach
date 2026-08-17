@@ -1,0 +1,35 @@
+name: Scheduled job search
+
+# Stands in for celery_beat + a Celery worker — neither exists on Render's
+# free tier (no free Background Worker plan). This just logs in and hits
+# the synchronous search route on a schedule instead, mirroring the app's
+# own morning/afternoon/evening cycle (see .env.example's
+# JOB_SEARCH_TIME_* — these are the same times converted from WAT to UTC;
+# adjust if your timezone differs).
+on:
+  schedule:
+    - cron: "0 6 * * *"   # 07:00 WAT — morning
+    - cron: "0 11 * * *"  # 12:00 WAT — afternoon
+    - cron: "0 18 * * *"  # 19:00 WAT — evening
+  workflow_dispatch: {} # lets you trigger it by hand from the Actions tab
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log in and run search + scoring
+        run: |
+          set -e
+          token=$(curl -sf -X POST "${FLAMES_API_URL}/auth/login" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "username=${FLAMES_EMAIL}" \
+            --data-urlencode "password=${FLAMES_PASSWORD}" \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['access_token'])")
+
+          curl -sf -X POST "${FLAMES_API_URL}/jobs/search-sync" \
+            -H "Authorization: Bearer ${token}" \
+            --max-time 280
+        env:
+          FLAMES_API_URL: ${{ secrets.FLAMES_API_URL }}
+          FLAMES_EMAIL: ${{ secrets.FLAMES_EMAIL }}
+          FLAMES_PASSWORD: ${{ secrets.FLAMES_PASSWORD }}
