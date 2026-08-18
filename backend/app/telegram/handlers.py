@@ -19,13 +19,16 @@ from app.database.session import engine
 from app.models.application import Application
 from app.models.user import User
 from app.repositories.application_repository import ApplicationRepository
+from app.repositories.application_rule_repository import ApplicationRuleRepository
 from app.repositories.email_repository import EmailRepository
 from app.repositories.feature_flag_repository import FeatureFlagRepository
 from app.repositories.job_repository import JobRepository
 from app.repositories.system_log_repository import SystemLogRepository
+from app.repositories.user_profile_repository import UserProfileRepository
 from app.scheduler.pause import PAUSE_FLAG_KEY
 from app.services.ai_service import get_ai_service
 from app.services.dashboard_service import get_dashboard_service
+from app.services.feature_flag_service import FLAG_KEYS, get_feature_flag_service
 from app.telegram.keyboards import job_review_keyboard
 
 HandlerResult = list[tuple[str, dict[str, Any] | None]]
@@ -42,17 +45,19 @@ COMMAND_DESCRIPTIONS = {
     "review": "Show jobs pending review, with Apply/Skip buttons",
     "emails": "List recently classified emails",
     "stats": "Show dashboard summary statistics",
-    "settings": "Show current feature flags and thresholds",
+    "settings": "Show feature flags, or /settings <key> on|off to change one",
+    "rules": "List your application rules",
+    "profile": "Show the profile the AI scores jobs against",
+    "search": "Run a job search + AI scoring cycle right now",
     "pause": "Pause automated search/scoring cycles",
     "resume": "Resume automated search/scoring cycles",
     "health": "Show system health (admin only)",
     "logs": "Show recent system log entries (admin only)",
-    "search": "Not yet available — lands with the Application Engine",
-    "apply": "Not yet available — lands with the Application Engine",
-    "retry": "Not yet available — lands with the Application Engine",
+    "apply": "Not yet available — queue from /review's Apply button instead",
+    "retry": "Not yet available — retry a failed application from the dashboard instead",
 }
 
-_NOT_YET_AVAILABLE = {"search", "apply", "retry"}
+_NOT_YET_AVAILABLE = {"apply", "retry"}
 
 
 async def dispatch_command(
@@ -71,8 +76,8 @@ async def dispatch_command(
 
 
 # Commands the free-text assistant may route to. Deliberately excludes
-# pause/resume (state-changing — require the explicit command, never an AI
-# guess) and anything in _NOT_YET_AVAILABLE.
+# pause/resume/search (state-changing, or costly/slow — require the
+# explicit command, never an AI guess) and anything in _NOT_YET_AVAILABLE.
 ASSISTANT_ELIGIBLE_COMMANDS = {
     "start",
     "help",
@@ -84,6 +89,8 @@ ASSISTANT_ELIGIBLE_COMMANDS = {
     "emails",
     "stats",
     "settings",
+    "rules",
+    "profile",
     "health",
     "logs",
 }
@@ -223,16 +230,64 @@ async def _handle_stats(db: AsyncSession, user: User, args: list[str]) -> Handle
 async def _handle_settings(db: AsyncSession, user: User, args: list[str]) -> HandlerResult:
     from app.config.settings import get_settings
 
+    flag_service = get_feature_flag_service(db)
+
+    if len(args) == 2 and args[0] in FLAG_KEYS and args[1].lower() in ("on", "off"):
+        enabled = args[1].lower() == "on"
+        await flag_service.set(args[0], enabled)
+        return [(f"{args[0]} is now {'enabled' if enabled else 'disabled'}.", None)]
+
     settings = get_settings()
-    return [
-        (
-            f"Job match threshold: {settings.job_match_threshold}\n"
-            f"Auto-apply: {'enabled' if settings.enable_auto_apply else 'disabled'}\n"
-            f"Gmail: {'enabled' if settings.enable_gmail else 'disabled'}\n"
-            f"AI provider: {settings.ai_provider}",
-            None,
+    flags = await flag_service.get_all()
+    lines = ["Feature flags — /settings <key> on|off to change one:"]
+    lines.extend(f"- {key}: {'on' if enabled else 'off'}" for key, enabled in flags.items())
+    lines.append(f"\nJob match threshold: {settings.job_match_threshold}")
+    return [("\n".join(lines), None)]
+
+
+async def _handle_rules(db: AsyncSession, user: User, args: list[str]) -> HandlerResult:
+    rules = await ApplicationRuleRepository(db).list(user_id=user.id, limit=20)
+    if not rules:
+        return [("No rules defined yet. Add them from the dashboard's Rules page.", None)]
+    lines = ["Your rules:"]
+    for rule in rules:
+        state = "on" if rule.enabled else "off"
+        condition = rule.condition
+        lines.append(
+            f"- [{state}] {rule.name} ({rule.priority_tier.value}): "
+            f"{condition['field']} {condition['op']} {condition['value']}"
         )
+    return [("\n".join(lines), None)]
+
+
+async def _handle_profile(db: AsyncSession, user: User, args: list[str]) -> HandlerResult:
+    profile = await UserProfileRepository(db).get_by_user_id(user.id)
+    if profile is None or not profile.full_name:
+        return [
+            (
+                "No profile set yet. Fill it in from the dashboard's Profile "
+                "page — it's what the AI scores every job against.",
+                None,
+            )
+        ]
+    location = ", ".join(filter(None, [profile.city, profile.country])) or "—"
+    lines = [
+        f"Name: {profile.full_name}",
+        f"Position: {profile.current_position or '—'}",
+        f"Experience: {profile.years_of_experience or '—'} years",
+        f"Location: {location}",
+        f"Work authorization: {profile.work_authorization or '—'}",
     ]
+    return [("\n".join(lines), None)]
+
+
+async def _handle_search(db: AsyncSession, user: User, args: list[str]) -> HandlerResult:
+    from app.tasks.ai_tasks import _score_pending_jobs
+    from app.tasks.search_tasks import _search_all_providers
+
+    found = await _search_all_providers()
+    await _score_pending_jobs()
+    return [(f"Search complete: {found} new job(s) found and scored.", None)]
 
 
 async def _handle_pause(db: AsyncSession, user: User, args: list[str]) -> HandlerResult:
@@ -328,6 +383,9 @@ _HANDLERS = {
     "emails": _handle_emails,
     "stats": _handle_stats,
     "settings": _handle_settings,
+    "rules": _handle_rules,
+    "profile": _handle_profile,
+    "search": _handle_search,
     "pause": _handle_pause,
     "resume": _handle_resume,
     "health": _handle_health,
