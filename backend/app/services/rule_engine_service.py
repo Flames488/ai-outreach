@@ -146,6 +146,11 @@ class RuleEngineService:
             "provider": job.provider,
             "applications_today": applications_today,
             "skills": [skill.skill_name for skill in skills],
+            "client_total_spend": (
+                float(job.client_total_spend) if job.client_total_spend is not None else None
+            ),
+            "client_rating": job.client_rating,
+            "client_payment_verified": job.client_payment_verified,
         }
 
 

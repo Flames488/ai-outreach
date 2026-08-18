@@ -49,3 +49,10 @@ class Job(UUIDPrimaryKeyMixin, TimestampMixin, SoftDeleteMixin, Base):
     status: Mapped[JobStatus] = mapped_column(
         SqlEnum(JobStatus, name="job_status", native_enum=True), default=JobStatus.NEW, index=True
     )
+    # Freelance-platform client signals — always manually entered (see
+    # JobCreate / POST /jobs), never populated by a provider. Upwork/Fiverr
+    # don't offer a public API for this, and scraping it violates their
+    # ToS, so there's deliberately no automated path onto these columns.
+    client_total_spend: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    client_rating: Mapped[float | None] = mapped_column(Float, nullable=True)
+    client_payment_verified: Mapped[bool | None] = mapped_column(Boolean, nullable=True)

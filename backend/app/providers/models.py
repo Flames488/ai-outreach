@@ -64,6 +64,12 @@ class StandardJob(BaseModel):
     salary_min: float | None = None
     salary_max: float | None = None
     currency: str | None = None
+    # Freelance-platform client signals (manually entered — no provider
+    # populates these; see docs/architecture.md's "Client signals"
+    # section for why this stays manual instead of scraping Upwork/Fiverr).
+    client_total_spend: float | None = None
+    client_rating: float | None = None
+    client_payment_verified: bool | None = None
 
 
 # Phase 2 §13 calls this contract `NormalizedJob` — same shape, same

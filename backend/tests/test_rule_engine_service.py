@@ -60,6 +60,9 @@ def _job(**overrides: object):
         employment_type=None,
         experience_level=None,
         provider="remoteok",
+        client_total_spend=None,
+        client_rating=None,
+        client_payment_verified=None,
     )
     defaults.update(overrides)
     return SimpleNamespace(**defaults)

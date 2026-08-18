@@ -35,7 +35,33 @@ class JobRead(BaseModel):
     status: JobStatus
     posted_date: datetime | None
     discovered_at: datetime
+    client_total_spend: float | None
+    client_rating: float | None
+    client_payment_verified: bool | None
 
 
 class JobDetail(JobRead):
     description: str
+
+
+class JobCreate(BaseModel):
+    """For manually-added jobs — freelance-platform gigs (Upwork, Fiverr,
+    etc.) that no provider discovers automatically. See docs/architecture.md
+    on why there's deliberately no scraping-based path onto these."""
+
+    title: str
+    company_name: str | None = None
+    provider: str = "manual"
+    description: str = ""
+    application_url: str
+    location: str | None = None
+    country: str | None = None
+    city: str | None = None
+    remote: bool = False
+    employment_type: str | None = None
+    salary_min: float | None = None
+    salary_max: float | None = None
+    currency: str | None = None
+    client_total_spend: float | None = None
+    client_rating: float | None = None
+    client_payment_verified: bool | None = None

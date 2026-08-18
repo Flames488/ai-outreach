@@ -17,6 +17,9 @@ const ALLOWED_FIELDS = [
   "provider",
   "applications_today",
   "skills",
+  "client_total_spend",
+  "client_rating",
+  "client_payment_verified",
 ];
 
 const OPERATORS: RuleOperator[] = ["==", "!=", ">=", "<=", ">", "<", "in", "not_in", "contains"];

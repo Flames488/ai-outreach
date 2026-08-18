@@ -66,6 +66,9 @@ class JobIngestionService:
             discovered_at=datetime.now(UTC),
             expires_at=normalized.closing_date,
             status=JobStatus.NEW,
+            client_total_spend=normalized.client_total_spend,
+            client_rating=normalized.client_rating,
+            client_payment_verified=normalized.client_payment_verified,
         )
 
         for skill in normalized.skills:

@@ -5,16 +5,19 @@ database directly (Part 3 §21).
 from __future__ import annotations
 
 import uuid
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
 from flames_shared.enums import ErrorCode, JobStatus
 
-from app.api.deps import get_current_user, get_job_service_dep
+from app.api.deps import get_current_user, get_job_ingestion_service_dep, get_job_service_dep
 from app.core.exceptions import FlamesAPIError
 from app.models.user import User
+from app.providers.models import StandardJob
 from app.schemas.envelope import SuccessResponse
-from app.schemas.job import JobDetail, JobRead
+from app.schemas.job import JobCreate, JobDetail, JobRead
+from app.services.job_ingestion_service import JobIngestionService
 from app.services.job_service import JobService
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -67,6 +70,46 @@ async def get_job(
     return SuccessResponse(
         message="Job retrieved successfully.", data=JobDetail.model_validate(job)
     )
+
+
+@router.post("", response_model=SuccessResponse[JobRead], status_code=201)
+async def create_job(
+    body: JobCreate,
+    ingestion: Annotated[JobIngestionService, Depends(get_job_ingestion_service_dep)],
+    _: Annotated[User, Depends(get_current_user)],
+) -> SuccessResponse[JobRead]:
+    """Manually add a job — the intake point for freelance-platform gigs
+    (Upwork, Fiverr, etc.) that no provider discovers automatically.
+    Client signals (client_total_spend/rating/payment_verified) only ever
+    get in through here; there's deliberately no scraping-based path onto
+    them (see JobCreate's docstring)."""
+    standard_job = StandardJob(
+        id=f"manual-{uuid.uuid4()}",
+        provider=body.provider,
+        job_title=body.title,
+        company=body.company_name or "",
+        location=body.location,
+        salary=None,
+        employment_type=body.employment_type,
+        experience_level=None,
+        description=body.description,
+        skills=[],
+        application_url=body.application_url,
+        company_url=None,
+        posted_date=datetime.now(UTC),
+        source_url=body.application_url,
+        is_remote=body.remote,
+        country=body.country,
+        city=body.city,
+        salary_min=body.salary_min,
+        salary_max=body.salary_max,
+        currency=body.currency,
+        client_total_spend=body.client_total_spend,
+        client_rating=body.client_rating,
+        client_payment_verified=body.client_payment_verified,
+    )
+    job = await ingestion.ingest(standard_job)
+    return SuccessResponse(message="Job added successfully.", data=JobRead.model_validate(job))
 
 
 @router.post("/search", response_model=SuccessResponse[dict])

@@ -25,6 +25,9 @@ ALLOWED_CONDITION_FIELDS = frozenset(
         "provider",
         "applications_today",
         "skills",
+        "client_total_spend",
+        "client_rating",
+        "client_payment_verified",
     }
 )
 

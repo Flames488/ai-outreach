@@ -9,6 +9,7 @@ import type {
   Envelope,
   GmailStatus,
   Job,
+  JobCreate,
   JobDetail,
   JobStatus,
   RuleCondition,
@@ -160,6 +161,8 @@ export const api = {
       min_score?: number;
     }) => request<Job[]>(`/jobs${qs(params)}`),
     get: (id: string) => request<JobDetail>(`/jobs/${id}`),
+    create: (body: JobCreate) =>
+      request<Job>("/jobs", { method: "POST", body: JSON.stringify(body) }),
     triggerSearch: () => request<{ task_id: string }>("/jobs/search", { method: "POST" }),
     // No Celery worker in this deployment (e.g. Render's free tier has no
     // free Background Worker plan) — runs search + scoring in-process

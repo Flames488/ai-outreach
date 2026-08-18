@@ -93,10 +93,32 @@ export interface Job {
   status: JobStatus;
   posted_date: string | null;
   discovered_at: string;
+  client_total_spend: number | null;
+  client_rating: number | null;
+  client_payment_verified: boolean | null;
 }
 
 export interface JobDetail extends Job {
   description: string;
+}
+
+export interface JobCreate {
+  title: string;
+  company_name?: string | null;
+  provider?: string;
+  description?: string;
+  application_url: string;
+  location?: string | null;
+  country?: string | null;
+  city?: string | null;
+  remote?: boolean;
+  employment_type?: string | null;
+  salary_min?: number | null;
+  salary_max?: number | null;
+  currency?: string | null;
+  client_total_spend?: number | null;
+  client_rating?: number | null;
+  client_payment_verified?: boolean | null;
 }
 
 export interface Application {

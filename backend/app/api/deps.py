@@ -24,6 +24,7 @@ from app.repositories.user_repository import UserRepository
 from app.services.application_service import ApplicationService, get_application_service
 from app.services.dashboard_service import DashboardService, get_dashboard_service
 from app.services.email_service import EmailService, get_email_service
+from app.services.job_ingestion_service import JobIngestionService, get_job_ingestion_service
 from app.services.job_service import JobService, get_job_service
 from app.services.rule_engine_service import RuleEngineService, get_rule_engine_service
 from app.services.settings_service import SettingsService, get_settings_service
@@ -69,6 +70,12 @@ def require_role(role: UserRole) -> Callable[[User], User]:
 
 def get_job_service_dep(db: Annotated[AsyncSession, Depends(get_db)]) -> JobService:
     return get_job_service(db)
+
+
+def get_job_ingestion_service_dep(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> JobIngestionService:
+    return get_job_ingestion_service(db)
 
 
 def get_application_service_dep(
