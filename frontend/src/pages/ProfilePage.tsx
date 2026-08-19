@@ -36,6 +36,10 @@ export function ProfilePage() {
   const [education, setEducation] = useState("");
   const [certifications, setCertifications] = useState("");
   const [languages, setLanguages] = useState("");
+  const [professionalSummary, setProfessionalSummary] = useState("");
+  const [skills, setSkills] = useState("");
+  const [desiredTitles, setDesiredTitles] = useState("");
+  const [notableProjects, setNotableProjects] = useState("");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -57,6 +61,10 @@ export function ProfilePage() {
     setEducation(listToLines(profile.education));
     setCertifications(listToLines(profile.certifications));
     setLanguages(listToLines(profile.languages));
+    setProfessionalSummary(profile.professional_summary ?? "");
+    setSkills(listToLines(profile.skills));
+    setDesiredTitles(listToLines(profile.desired_titles));
+    setNotableProjects(listToLines(profile.notable_projects));
     setHydrated(true);
   }, [meQuery.data, hydrated]);
 
@@ -89,6 +97,10 @@ export function ProfilePage() {
       education: linesToList(education),
       certifications: linesToList(certifications),
       languages: linesToList(languages),
+      professional_summary: professionalSummary || null,
+      skills: linesToList(skills),
+      desired_titles: linesToList(desiredTitles),
+      notable_projects: linesToList(notableProjects),
     });
   };
 
@@ -123,6 +135,50 @@ export function ProfilePage() {
               <label className="label">City</label>
               <input className="input" value={city} onChange={(e) => setCity(e.target.value)} />
             </div>
+          </div>
+        </section>
+
+        <section className="card space-y-4 p-6">
+          <h2 className="text-sm font-semibold text-slate-700">What you're looking for</h2>
+          <p className="text-xs text-slate-400">
+            This is the strongest signal the AI uses to score and rank jobs — the more specific,
+            the better the matches.
+          </p>
+          <div>
+            <label className="label">Professional summary</label>
+            <textarea
+              className="input min-h-24"
+              placeholder="Results-driven Programmer, Web Developer, Web Designer and AI Automation Specialist with 5+ years experience building scalable digital solutions..."
+              value={professionalSummary}
+              onChange={(e) => setProfessionalSummary(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">Desired job titles — one per line</label>
+            <textarea
+              className="input min-h-20"
+              placeholder={"Web Developer\nAI Automation Specialist\nBackend Developer"}
+              value={desiredTitles}
+              onChange={(e) => setDesiredTitles(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">Skills — one per line</label>
+            <textarea
+              className="input min-h-24"
+              placeholder={"Web Development\nFrontend Development\nBackend Development\nAI Automation\nAPI Integration"}
+              value={skills}
+              onChange={(e) => setSkills(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="label">Notable projects — one per line</label>
+            <textarea
+              className="input min-h-20"
+              placeholder={"Vitar – www.livevault.cloud\nCodebrix Web – www.codebrixweb.com"}
+              value={notableProjects}
+              onChange={(e) => setNotableProjects(e.target.value)}
+            />
           </div>
         </section>
 

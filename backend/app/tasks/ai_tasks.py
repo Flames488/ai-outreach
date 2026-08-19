@@ -94,8 +94,12 @@ def _profile_to_dict(profile: UserProfile | None) -> dict[str, object]:
         return {}
     return {
         "full_name": profile.full_name,
+        "professional_summary": profile.professional_summary,
+        "desired_titles": profile.desired_titles,
+        "skills": profile.skills,
         "years_of_experience": profile.years_of_experience,
         "current_position": profile.current_position,
+        "notable_projects": profile.notable_projects,
         "education": profile.education,
         "certifications": profile.certifications,
         "languages": profile.languages,

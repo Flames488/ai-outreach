@@ -271,11 +271,15 @@ async def _handle_profile(db: AsyncSession, user: User, args: list[str]) -> Hand
             )
         ]
     location = ", ".join(filter(None, [profile.city, profile.country])) or "—"
+    titles = ", ".join(profile.desired_titles) if profile.desired_titles else "—"
+    skills = ", ".join(profile.skills) if profile.skills else "—"
     lines = [
         f"Name: {profile.full_name}",
         f"Position: {profile.current_position or '—'}",
         f"Experience: {profile.years_of_experience or '—'} years",
         f"Location: {location}",
+        f"Looking for: {titles}",
+        f"Skills: {skills}",
         f"Work authorization: {profile.work_authorization or '—'}",
     ]
     return [("\n".join(lines), None)]

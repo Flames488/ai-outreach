@@ -62,6 +62,10 @@ export interface UserProfile {
   education: unknown[] | null;
   certifications: unknown[] | null;
   languages: unknown[] | null;
+  professional_summary: string | null;
+  skills: unknown[] | null;
+  desired_titles: unknown[] | null;
+  notable_projects: unknown[] | null;
 }
 
 export interface User {

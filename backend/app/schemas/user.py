@@ -28,6 +28,10 @@ class UserProfileRead(BaseModel):
     education: list | None
     certifications: list | None
     languages: list | None
+    professional_summary: str | None
+    skills: list | None
+    desired_titles: list | None
+    notable_projects: list | None
 
 
 class UserRead(BaseModel):
@@ -60,3 +64,7 @@ class UserProfileUpdate(BaseModel):
     education: list | None = None
     certifications: list | None = None
     languages: list | None = None
+    professional_summary: str | None = None
+    skills: list | None = None
+    desired_titles: list | None = None
+    notable_projects: list | None = None

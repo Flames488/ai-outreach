@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String, func
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -35,6 +35,10 @@ class UserProfile(UUIDPrimaryKeyMixin, Base):
     education: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     certifications: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     languages: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    professional_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    skills: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    desired_titles: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    notable_projects: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     # Not in Phase 2's field list for this table — added since 16-Telegram.md
     # and 08-Configuration.md both reference "stored notification
     # preferences" with nowhere else in the schema to put them; one-to-one
