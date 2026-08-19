@@ -133,6 +133,22 @@ class Settings(BaseSettings):
     job_search_max_results: int = Field(default=200, alias="JOB_SEARCH_MAX_RESULTS")
     job_match_threshold: int = Field(default=80, ge=0, le=100, alias="JOB_MATCH_THRESHOLD")
 
+    # ---- Google Jobs (via SerpApi — Google has no free public jobs API) ----
+    serpapi_key: str = Field(default="", alias="SERPAPI_KEY")
+    google_jobs_query: str = Field(
+        default="web developer OR full stack developer OR AI automation",
+        alias="GOOGLE_JOBS_QUERY",
+    )
+    google_jobs_location: str = Field(default="Remote", alias="GOOGLE_JOBS_LOCATION")
+
+    # ---- Greenhouse / Lever (per-company job boards — no generic search;
+    # comma-separated board tokens, the slug in boards.greenhouse.io/<token>
+    # or jobs.lever.co/<token>) ----
+    greenhouse_companies: str = Field(
+        default="gitlab,stripe,coinbase,airbnb", alias="GREENHOUSE_COMPANIES"
+    )
+    lever_companies: str = Field(default="palantir,plaid,lever", alias="LEVER_COMPANIES")
+
     # ---- Storage (consolidated) ----
     storage_root: str = Field(default="/app/storage", alias="STORAGE_ROOT")
     log_dir: str = Field(default="/app/logs", alias="LOG_DIR")
@@ -203,6 +219,14 @@ class Settings(BaseSettings):
     def cors_allowed_origins_list(self) -> list[str]:
         origins = self.cors_allowed_origins.split(",")
         return [origin.strip() for origin in origins if origin.strip()]
+
+    @property
+    def greenhouse_companies_list(self) -> list[str]:
+        return [c.strip() for c in self.greenhouse_companies.split(",") if c.strip()]
+
+    @property
+    def lever_companies_list(self) -> list[str]:
+        return [c.strip() for c in self.lever_companies.split(",") if c.strip()]
 
     @property
     def celery_broker_url(self) -> str:

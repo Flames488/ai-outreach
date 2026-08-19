@@ -12,17 +12,27 @@ duplicated per source).
 - `mapping.py` — `standard_job_to_job_posting()`: StandardJob -> the
   cross-service `JobPosting` DTO (used by AI scoring)
 - `registry.py` — `get_enabled_providers()`, the single place providers are listed
-- `remoteok.py` — **working end-to-end**: real `GET https://remoteok.com/api` call
-- `indeed.py`, `google_jobs.py`, `wellfound.py`, `company_career.py`,
-  `greenhouse.py`, `lever.py` — stubs, `NotImplementedError`
+- `remoteok.py` — real `GET https://remoteok.com/api` call, no auth, no config
+- `greenhouse.py`, `lever.py` — real public per-company board APIs, no
+  auth; poll `settings.greenhouse_companies_list` /
+  `settings.lever_companies_list` (comma-separated board tokens) since
+  neither has a generic "search everything" endpoint
+- `google_jobs.py` — real, via SerpApi (paid scraper-as-a-service —
+  Google itself has no free jobs-search API); raises if `SERPAPI_KEY`
+  is unset rather than silently returning nothing
+- `company_career.py` — stub, `NotImplementedError`, and not in
+  `get_enabled_providers()`
 
 ## Status
 
-RemoteOK is the one provider implemented end-to-end for Phase 2 (§13:
-"pick the one with the simplest public API... the point of this phase is
-proving the adapter pattern works, not covering every source"). The other
-six raise `NotImplementedError` — `JobService.search_all()` catches that
-per-provider and continues, logging the failure to `provider_logs`.
+Indeed and Wellfound were removed entirely (not just left unimplemented):
+neither has a free public API anymore, and the only ways to get their
+listings are a paid/approved partnership or ToS-violating scraping — not
+worth retrying-and-failing on every search cycle. All four registered
+providers above are real integrations, not stubs. One provider failing
+(bad company token, network error, missing SerpApi key) never aborts the
+others — `JobService.search_all()` catches per-provider and continues,
+logging the failure to `provider_logs`.
 
 Providers never touch the database — `app/services/job_ingestion_service.py`
 is the only thing that maps a `StandardJob` onto a stored `jobs` row
