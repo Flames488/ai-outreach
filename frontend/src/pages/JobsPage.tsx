@@ -333,7 +333,7 @@ function AddJobModal({ onClose }: { onClose: () => void }) {
             <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className="label">Client / company name</label>
               <input className="input" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
@@ -370,7 +370,7 @@ function AddJobModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div>
               <label className="label">Budget min ($)</label>
               <input
@@ -401,7 +401,7 @@ function AddJobModal({ onClose }: { onClose: () => void }) {
 
           <div className="rounded-lg border border-slate-200 p-3">
             <p className="label mb-2">Client signals (optional — you enter these yourself)</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <label className="label">Client total spend ($)</label>
                 <input

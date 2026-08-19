@@ -120,8 +120,12 @@ export function Layout() {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Mobile top bar */}
-        <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
+        {/* Mobile top bar — padding-top also covers the notch/status bar
+            when installed as a standalone PWA (env() is 0 in a normal tab) */}
+        <header
+          className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden"
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+        >
           <button
             onClick={() => setMobileNavOpen(true)}
             className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
@@ -139,7 +143,10 @@ export function Layout() {
         </header>
 
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+          <div
+            className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8"
+            style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
+          >
             <Outlet />
           </div>
         </main>

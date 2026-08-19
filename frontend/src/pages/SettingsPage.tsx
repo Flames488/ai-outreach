@@ -87,9 +87,9 @@ export function SettingsPage() {
         <h2 className="mb-4 text-sm font-semibold text-slate-700">Feature flags</h2>
         <div className="divide-y divide-slate-100">
           {(Object.keys(feature_flags) as (keyof FeatureFlags)[]).map((key) => (
-            <div key={key} className="flex items-center justify-between py-3">
+            <div key={key} className="flex items-center justify-between gap-4 py-3">
               <span className="text-sm text-slate-700">{FLAG_LABELS[key]}</span>
-              <label className="relative inline-flex cursor-pointer items-center">
+              <label className="relative inline-flex shrink-0 cursor-pointer items-center">
                 <input
                   type="checkbox"
                   className="peer sr-only"
