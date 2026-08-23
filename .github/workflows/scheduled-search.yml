@@ -26,9 +26,24 @@ jobs:
             --data-urlencode "password=${FLAMES_PASSWORD}" \
             | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['access_token'])")
 
-          curl -sf -X POST "${FLAMES_API_URL}/jobs/search-sync" \
-            -H "Authorization: Bearer ${token}" \
-            --max-time 280
+          # /jobs/search-sync can legitimately run for minutes (Phase 2 §72),
+          # but Render's free-tier proxy kills requests that sit idle past
+          # ~100s, returning a 502/504 well before our own --max-time hits.
+          # The route is designed to be safely re-called — it only ever acts
+          # on jobs it hasn't processed yet — so retry on failure instead of
+          # failing the whole run on what's really just a proxy timeout.
+          max_attempts=5
+          for attempt in $(seq 1 "$max_attempts"); do
+            if curl -sf -X POST "${FLAMES_API_URL}/jobs/search-sync" \
+                -H "Authorization: Bearer ${token}" \
+                --max-time 280; then
+              exit 0
+            fi
+            echo "search-sync attempt ${attempt}/${max_attempts} failed (likely a gateway timeout); retrying..." >&2
+            sleep 5
+          done
+          echo "search-sync did not succeed after ${max_attempts} attempts" >&2
+          exit 1
         env:
           FLAMES_API_URL: ${{ secrets.FLAMES_API_URL }}
           FLAMES_EMAIL: ${{ secrets.FLAMES_EMAIL }}
