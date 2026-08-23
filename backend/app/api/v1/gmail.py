@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import RedirectResponse
@@ -55,7 +55,7 @@ async def gmail_callback(
     state: str,
     email_service: Annotated[EmailService, Depends(get_email_service_dep)],
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> SuccessResponse[dict] | RedirectResponse:
+) -> SuccessResponse[dict[str, Any]] | RedirectResponse:
     """OAuth redirect target — exchanges the authorization code for
     tokens and stores the refresh token encrypted (never the access
     token, which is short-lived and not worth persisting). Google makes

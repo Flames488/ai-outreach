@@ -6,7 +6,7 @@ directly.
 from __future__ import annotations
 
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
@@ -64,11 +64,11 @@ async def update_rule(
     )
 
 
-@router.delete("/{rule_id}", response_model=SuccessResponse[dict])
+@router.delete("/{rule_id}", response_model=SuccessResponse[dict[str, Any]])
 async def delete_rule(
     rule_id: uuid.UUID,
     rules: Annotated[RuleEngineService, Depends(get_rule_engine_service_dep)],
     user: Annotated[User, Depends(get_current_user)],
-) -> SuccessResponse[dict]:
+) -> SuccessResponse[dict[str, Any]]:
     await rules.delete_rule(rule_id, user.id)
     return SuccessResponse(message="Rule deleted successfully.", data={})

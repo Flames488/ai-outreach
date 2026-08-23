@@ -57,21 +57,24 @@ class RemoteOKProvider(Provider):
 
     def normalize(self, raw_result: dict[str, object]) -> StandardJob:
         posted_date = _parse_date(raw_result.get("date"))
-        salary_min = raw_result.get("salary_min") or None
-        salary_max = raw_result.get("salary_max") or None
+        salary_min = _as_float(raw_result.get("salary_min"))
+        salary_max = _as_float(raw_result.get("salary_max"))
         salary = f"${salary_min:,.0f}-${salary_max:,.0f}" if salary_min and salary_max else None
+        location = raw_result.get("location")
+        company_logo = raw_result.get("company_logo") or raw_result.get("logo")
+        tags = raw_result.get("tags")
 
         return StandardJob(
             id=str(raw_result["id"]),
             provider=self.name,
             job_title=str(raw_result.get("position", "")),
             company=str(raw_result.get("company", "")),
-            location=raw_result.get("location") or None,
+            location=str(location) if location else None,
             salary=salary,
             employment_type=None,
             experience_level=None,
             description=str(raw_result.get("description", "")),
-            skills=list(raw_result.get("tags", [])),
+            skills=[str(tag) for tag in tags] if isinstance(tags, list) else [],
             application_url=str(raw_result.get("apply_url") or raw_result.get("url", "")),
             company_url=None,
             posted_date=posted_date,
@@ -79,9 +82,9 @@ class RemoteOKProvider(Provider):
             is_remote=True,
             country=None,
             city=None,
-            company_logo=raw_result.get("company_logo") or raw_result.get("logo") or None,
-            salary_min=float(salary_min) if salary_min else None,
-            salary_max=float(salary_max) if salary_max else None,
+            company_logo=str(company_logo) if company_logo else None,
+            salary_min=salary_min,
+            salary_max=salary_max,
             currency="USD" if salary_min or salary_max else None,
         )
 
@@ -93,4 +96,16 @@ def _parse_date(value: object) -> datetime | None:
         return datetime.fromisoformat(value)
     except ValueError:
         logger.warning("RemoteOK: unparseable date %r", value)
+        return None
+
+
+def _as_float(value: object) -> float | None:
+    """`or None`-style filtering (falsy raw values, e.g. a 0 salary,
+    count as "not listed") kept explicit so behavior matches the old
+    untyped version exactly."""
+    if not value or not isinstance(value, (int, float, str)):
+        return None
+    try:
+        return float(value)
+    except ValueError:
         return None

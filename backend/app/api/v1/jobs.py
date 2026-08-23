@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from flames_shared.enums import ErrorCode, JobStatus
@@ -112,10 +112,10 @@ async def create_job(
     return SuccessResponse(message="Job added successfully.", data=JobRead.model_validate(job))
 
 
-@router.post("/search", response_model=SuccessResponse[dict])
+@router.post("/search", response_model=SuccessResponse[dict[str, Any]])
 async def trigger_search(
     _: Annotated[User, Depends(get_current_user)],
-) -> SuccessResponse[dict]:
+) -> SuccessResponse[dict[str, Any]]:
     """Triggers a Celery search task and returns immediately (Phase 2 §55
     /§72 — the API never blocks on provider calls). Requires an actual
     Celery worker consuming the queue — see /search-sync if none exists
@@ -126,10 +126,10 @@ async def trigger_search(
     return SuccessResponse(message="Job search queued.", data={"task_id": task.id})
 
 
-@router.post("/search-sync", response_model=SuccessResponse[dict])
+@router.post("/search-sync", response_model=SuccessResponse[dict[str, Any]])
 async def trigger_search_sync(
     _: Annotated[User, Depends(get_current_user)],
-) -> SuccessResponse[dict]:
+) -> SuccessResponse[dict[str, Any]]:
     """Runs search + AI scoring synchronously, in-process, instead of via
     Celery — for deployments with no worker to consume /search's queue
     (Render's free tier has no free Background Worker plan; this route

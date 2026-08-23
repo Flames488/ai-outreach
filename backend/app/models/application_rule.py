@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from flames_shared.enums import RulePriorityTier
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text, func
@@ -31,7 +32,7 @@ class ApplicationRule(UUIDPrimaryKeyMixin, Base):
     priority_tier: Mapped[RulePriorityTier] = mapped_column(
         SqlEnum(RulePriorityTier, name="rule_priority_tier", native_enum=True), index=True
     )
-    condition: Mapped[dict] = mapped_column(JSONB)
+    condition: Mapped[dict[str, Any]] = mapped_column(JSONB)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

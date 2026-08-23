@@ -38,7 +38,7 @@ from __future__ import annotations
 
 import re
 
-from playwright.async_api import Page
+from playwright.async_api import Locator, Page
 
 from app.playwright.plugins.base import ATSPlugin, DryRunResult
 
@@ -123,7 +123,7 @@ class SmartRecruitersPlugin(ATSPlugin):
         if await apply_btn.count():
             await apply_btn.first.click()
 
-    async def _first_present(self, page: Page, selectors: list[str]):
+    async def _first_present(self, page: Page, selectors: list[str]) -> Locator:
         """Try each selector in order, returning the first one actually
         present in the DOM — a documented field name first, then
         progressively more generic fallbacks. Raises if none match,
@@ -133,7 +133,7 @@ class SmartRecruitersPlugin(ATSPlugin):
             raise LookupError(f"none of {selectors!r} matched any element on the page")
         return result
 
-    async def _first_present_optional(self, page: Page, selectors: list[str]):
+    async def _first_present_optional(self, page: Page, selectors: list[str]) -> Locator | None:
         """Same as `_first_present`, but returns `None` instead of
         raising — for fields SmartRecruiters lets a company disable
         (mirrors Ashby's optional-phone handling)."""

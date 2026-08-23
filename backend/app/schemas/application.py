@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from flames_shared.enums import ApplicationStatus
 from pydantic import BaseModel, ConfigDict
@@ -29,8 +30,8 @@ class ApplicationCreate(BaseModel):
 
 class TimelineEvent(BaseModel):
     action: str
-    old_value: dict | None
-    new_value: dict | None
+    old_value: dict[str, Any] | None
+    new_value: dict[str, Any] | None
     created_at: datetime
 
 

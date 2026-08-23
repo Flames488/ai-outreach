@@ -8,9 +8,9 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
-from typing import TypeVar
+from typing import Any, TypeVar
 
 from app.database.session import session_scope
 from app.repositories.scheduled_task_repository import ScheduledTaskRepository
@@ -22,8 +22,10 @@ T = TypeVar("T")
 
 def track_scheduled_task(
     task_name: str, worker: str = "celery_worker"
-) -> Callable[[Callable[..., Awaitable[T]]], Callable[..., Awaitable[T]]]:
-    def decorator(func: Callable[..., Awaitable[T]]) -> Callable[..., Awaitable[T]]:
+) -> Callable[[Callable[..., Coroutine[Any, Any, T]]], Callable[..., Coroutine[Any, Any, T]]]:
+    def decorator(
+        func: Callable[..., Coroutine[Any, Any, T]],
+    ) -> Callable[..., Coroutine[Any, Any, T]]:
         @functools.wraps(func)
         async def wrapper(*args: object, **kwargs: object) -> T:
             start = time.perf_counter()

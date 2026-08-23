@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from flames_shared.enums import EmailCategory
 from sqlalchemy import Boolean, DateTime, String, Text, func
@@ -29,5 +30,5 @@ class EmailMessage(UUIDPrimaryKeyMixin, SoftDeleteMixin, Base):
         index=True,
     )
     processed: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
-    raw_payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    raw_payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

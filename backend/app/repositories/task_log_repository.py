@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, cast
 
-from sqlalchemy import delete
+from sqlalchemy import CursorResult, delete
 
 from app.models.task_log import TaskLog
 from app.repositories.base_repository import BaseRepository
@@ -15,4 +16,4 @@ class TaskLogRepository(BaseRepository[TaskLog]):
 
     async def delete_older_than(self, cutoff: datetime) -> int:
         result = await self.db.execute(delete(TaskLog).where(TaskLog.created_at < cutoff))
-        return result.rowcount or 0
+        return cast(CursorResult[Any], result).rowcount or 0

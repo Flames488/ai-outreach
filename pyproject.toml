@@ -25,3 +25,18 @@ ignore = ["UP046", "UP047"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+# No py.typed marker / no typeshed stubs exist for these — genuinely
+# untyped at the source, not just missing an installable stub package
+# (unlike jose/passlib, handled via types-python-jose/types-passlib).
+[[tool.mypy.overrides]]
+module = ["celery.*", "googleapiclient.*", "google_auth_oauthlib.*"]
+ignore_missing_imports = true
+
+# Celery's task/signal decorators (celery.app.task.Task.task,
+# celery.signals.*.connect) carry no type info at all — every module that
+# decorates with them would otherwise fail strict's disallow_untyped_decorators
+# on every single task/handler, which isn't a bug in our code to fix.
+[[tool.mypy.overrides]]
+module = ["app.tasks.*", "app.scheduler.logging_signals"]
+disallow_untyped_decorators = false

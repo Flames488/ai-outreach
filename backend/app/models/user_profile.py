@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -32,18 +33,18 @@ class UserProfile(UUIDPrimaryKeyMixin, Base):
     visa_sponsorship_needed: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     expected_salary: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
     notice_period: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    education: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    certifications: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    languages: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    education: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
+    certifications: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
+    languages: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
     professional_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
-    skills: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    desired_titles: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    notable_projects: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    skills: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
+    desired_titles: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
+    notable_projects: Mapped[list[Any] | None] = mapped_column(JSONB, nullable=True)
     # Not in Phase 2's field list for this table — added since 16-Telegram.md
     # and 08-Configuration.md both reference "stored notification
     # preferences" with nowhere else in the schema to put them; one-to-one
     # with users is the natural home.
-    notification_preferences: Mapped[dict] = mapped_column(JSON, default=dict)
+    notification_preferences: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
