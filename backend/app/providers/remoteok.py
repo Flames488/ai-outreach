@@ -44,13 +44,18 @@ class RemoteOKProvider(Provider):
         # First element is RemoteOK's API legal notice, not a job.
         postings = [item for item in payload if isinstance(item, dict) and "id" in item]
 
-        if params.query:
-            query_lower = params.query.lower()
+        terms = [t.lower() for t in params.keywords] or (
+            [params.query.lower()] if params.query else []
+        )
+        if terms:
             postings = [
                 item
                 for item in postings
-                if query_lower in str(item.get("position", "")).lower()
-                or query_lower in " ".join(item.get("tags", [])).lower()
+                if any(
+                    term in str(item.get("position", "")).lower()
+                    or term in " ".join(item.get("tags", [])).lower()
+                    for term in terms
+                )
             ]
 
         return postings[: params.limit]

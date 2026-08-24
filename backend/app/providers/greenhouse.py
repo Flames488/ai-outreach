@@ -60,9 +60,15 @@ class GreenhouseProvider(Provider):
                 except Exception:
                     logger.warning("Greenhouse board %r failed; skipping it", token, exc_info=True)
 
-        if params.query:
-            query_lower = params.query.lower()
-            postings = [p for p in postings if query_lower in str(p.get("title", "")).lower()]
+        terms = [t.lower() for t in params.keywords] or (
+            [params.query.lower()] if params.query else []
+        )
+        if terms:
+            postings = [
+                p
+                for p in postings
+                if any(term in str(p.get("title", "")).lower() for term in terms)
+            ]
 
         return postings
 
