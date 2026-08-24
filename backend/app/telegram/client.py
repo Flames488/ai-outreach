@@ -32,7 +32,12 @@ class TelegramProvider(NotificationProvider):
         if not self._chat_id:
             return False
         text = f"*{payload.title}*\n{payload.body}"
-        return await self.send_message(self._chat_id, text)
+        reply_markup = None
+        action_url = payload.metadata.get("action_url")
+        if action_url:
+            label = payload.metadata.get("action_label") or "Open"
+            reply_markup = {"inline_keyboard": [[{"text": label, "url": action_url}]]}
+        return await self.send_message(self._chat_id, text, reply_markup=reply_markup)
 
     async def send_message(
         self, chat_id: str, text: str, reply_markup: dict[str, Any] | None = None

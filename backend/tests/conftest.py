@@ -19,6 +19,12 @@ for _key, _value in {
     # validates the format at load time, not just presence.
     "MASTER_ENCRYPTION_KEY": base64.urlsafe_b64encode(b"0" * 32).decode(),
     "SEED_ADMIN_PASSWORD": "test-seed-admin-password",
+    # Settings.log_dir defaults to /app/logs (correct inside the Docker
+    # image); setup_logging() mkdir's it on app startup, which fails with
+    # PermissionError on any host where /app isn't already a writable,
+    # pre-existing directory (e.g. a GitHub Actions runner, or a non-root
+    # local dev machine).
+    "LOG_DIR": "/tmp/flames-test-logs",
 }.items():
     os.environ.setdefault(_key, _value)
 
