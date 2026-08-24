@@ -31,7 +31,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="relative flex min-h-dvh items-center justify-center bg-slate-50 px-4">
       <div className="absolute right-4 top-4">
         <ThemeToggle />
       </div>
