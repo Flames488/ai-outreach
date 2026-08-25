@@ -7,7 +7,12 @@ from __future__ import annotations
 import asyncio
 import logging
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.database.session import session_scope
+from app.providers.models import SearchParams
+from app.repositories.user_profile_repository import UserProfileRepository
+from app.repositories.user_repository import UserRepository
 from app.scheduler.celery_app import celery_app
 from app.scheduler.locking import task_lock
 from app.scheduler.pause import is_paused
@@ -40,6 +45,21 @@ async def _search_all_providers() -> int:
                 logger.info("Operations paused via /pause; skipping search_all_providers")
                 return 0
             job_service = get_job_service(db)
-            jobs = await job_service.search_all()
+            params = SearchParams(keywords=await _desired_titles(db))
+            jobs = await job_service.search_all(params)
             logger.info("Ingested %d job(s) this search cycle", len(jobs))
             return len(jobs)
+
+
+async def _desired_titles(db: AsyncSession) -> list[str]:
+    """Pulls the single tenant's desired job titles to drive provider
+    search relevance. Without this, providers with no query (RemoteOK,
+    Greenhouse, Lever) return their raw unfiltered feed — see the
+    `Provider.search()` implementations' `params.keywords` handling."""
+    users = await UserRepository(db).list(limit=1)
+    if not users:
+        return []
+    profile = await UserProfileRepository(db).get_by_user_id(users[0].id)
+    if profile is None or not profile.desired_titles:
+        return []
+    return list(profile.desired_titles)
