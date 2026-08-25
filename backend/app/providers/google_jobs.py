@@ -42,7 +42,12 @@ class GoogleJobsProvider(Provider):
                 SERPAPI_URL,
                 params={
                     "engine": "google_jobs",
-                    "q": params.query or settings.google_jobs_query,
+                    "q": params.query
+                    or (
+                        " OR ".join(params.keywords)
+                        if params.keywords
+                        else settings.google_jobs_query
+                    ),
                     "location": params.location or settings.google_jobs_location,
                     "api_key": settings.serpapi_key,
                 },

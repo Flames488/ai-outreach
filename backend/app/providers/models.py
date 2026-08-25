@@ -22,9 +22,18 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class SearchParams(BaseModel):
-    """Search criteria passed to `Provider.search()` (Phase 2 §13)."""
+    """Search criteria passed to `Provider.search()` (Phase 2 §13).
+
+    `query` is a single provider-native query string (e.g. SerpApi's
+    boolean `a OR b` syntax for Google Jobs). `keywords` is a plain list
+    of terms for providers that only support substring matching
+    (RemoteOK, Greenhouse, Lever) — a job matches if its title/tags
+    contain ANY of them, so a profile's several desired titles all get a
+    chance to match in a single request rather than needing one API call
+    per title (which would blow through SerpApi's free-tier quota)."""
 
     query: str | None = None
+    keywords: list[str] = Field(default_factory=list)
     location: str | None = None
     remote_only: bool = False
     limit: int = Field(default=50, ge=1, le=500)

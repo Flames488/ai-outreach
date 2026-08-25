@@ -20,15 +20,35 @@ jobs:
       - name: Log in and run search + scoring
         run: |
           set -e
-          token=$(curl -sf -X POST "${FLAMES_API_URL}/auth/login" \
+
+          login_response=$(curl -s -w '\n%{http_code}' -X POST "${FLAMES_API_URL}/auth/login" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             --data-urlencode "username=${FLAMES_EMAIL}" \
-            --data-urlencode "password=${FLAMES_PASSWORD}" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['access_token'])")
+            --data-urlencode "password=${FLAMES_PASSWORD}")
+          login_status=$(tail -n1 <<< "$login_response")
+          login_body=$(sed '$d' <<< "$login_response")
 
-          curl -sf -X POST "${FLAMES_API_URL}/jobs/search-sync" \
+          if [ "$login_status" -lt 200 ] || [ "$login_status" -ge 300 ]; then
+            echo "::error::Login failed with HTTP $login_status"
+            echo "$login_body"
+            exit 1
+          fi
+
+          token=$(python3 -c "import sys,json; print(json.load(sys.stdin)['data']['access_token'])" <<< "$login_body")
+
+          search_response=$(curl -s -w '\n%{http_code}' -X POST "${FLAMES_API_URL}/jobs/search-sync" \
             -H "Authorization: Bearer ${token}" \
-            --max-time 280
+            --max-time 280)
+          search_status=$(tail -n1 <<< "$search_response")
+          search_body=$(sed '$d' <<< "$search_response")
+
+          echo "search-sync responded with HTTP $search_status:"
+          echo "$search_body"
+
+          if [ "$search_status" -lt 200 ] || [ "$search_status" -ge 300 ]; then
+            echo "::error::search-sync failed with HTTP $search_status"
+            exit 1
+          fi
         env:
           FLAMES_API_URL: ${{ secrets.FLAMES_API_URL }}
           FLAMES_EMAIL: ${{ secrets.FLAMES_EMAIL }}

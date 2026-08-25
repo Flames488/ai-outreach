@@ -93,7 +93,7 @@ export function Layout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-dvh bg-slate-50">
       {/* Desktop sidebar — permanent, hidden below lg */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
         <SidebarContent />

@@ -48,7 +48,13 @@ async def _score_pending_jobs() -> None:
         ai_service = get_ai_service(db)
         rule_engine = get_rule_engine_service(db)
 
-        pending_jobs = await jobs_repo.list(status=JobStatus.NEW, limit=100)
+        # score_match calls used to fire back-to-back with no pacing, so
+        # anything past the first ~25 of a 100-job batch hit AI_RATE_LIMIT_
+        # PER_MINUTE's "Max 25 requests per 60s" and got kicked back to NEW
+        # every single cycle, forever. A smaller batch, paced below to stay
+        # under that budget, keeps every job in it within budget instead of
+        # discarding most of it on arrival.
+        pending_jobs = await jobs_repo.list(status=JobStatus.NEW, limit=60)
         if not pending_jobs:
             return
 
@@ -61,7 +67,14 @@ async def _score_pending_jobs() -> None:
         profile = await profiles_repo.get_by_user_id(user.id)
         cv_profile = _profile_to_dict(profile)
 
-        for job in pending_jobs:
+        # Spread calls out so the batch stays under the shared
+        # ratelimit:ai:<provider> budget instead of bursting into it.
+        pace_seconds = 60 / settings.ai_rate_limit_per_minute
+
+        for index, job in enumerate(pending_jobs):
+            if index > 0:
+                await asyncio.sleep(pace_seconds)
+
             company = await companies_repo.get(job.company_id) if job.company_id else None
             posting = JobPosting(
                 source=JobSourceType.OTHER,
