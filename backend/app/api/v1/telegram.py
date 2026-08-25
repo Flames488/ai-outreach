@@ -20,12 +20,12 @@ from app.telegram.router import handle_update
 router = APIRouter(prefix="/telegram", tags=["telegram"])
 
 
-@router.post("/webhook", response_model=SuccessResponse[dict])
+@router.post("/webhook", response_model=SuccessResponse[dict[str, Any]])
 async def telegram_webhook(
     update: dict[str, Any],
     db: Annotated[AsyncSession, Depends(get_db)],
     x_telegram_bot_api_secret_token: Annotated[str | None, Header()] = None,
-) -> SuccessResponse[dict]:
+) -> SuccessResponse[dict[str, Any]]:
     settings = get_settings()
     if (
         not settings.telegram_webhook_secret

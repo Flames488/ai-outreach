@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import secrets
 from datetime import UTC, datetime, timedelta
+from typing import cast
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
@@ -89,10 +90,10 @@ def build_consent_url(user_id: str) -> str:
         include_granted_scopes="true",
         state=_encode_state(user_id, code_verifier),
     )
-    return url
+    return cast(str, url)
 
 
 def exchange_code_for_credentials(code: str, code_verifier: str) -> Credentials:
     flow = _build_flow(code_verifier=code_verifier)
     flow.fetch_token(code=code)
-    return flow.credentials
+    return cast(Credentials, flow.credentials)

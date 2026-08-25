@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any, cast
 
-from sqlalchemy import select, update
+from sqlalchemy import CursorResult, select, update
 
 from app.models.scheduled_task import ScheduledTask
 from app.repositories.base_repository import BaseRepository
@@ -34,4 +35,4 @@ class ScheduledTaskRepository(BaseRepository[ScheduledTask]):
             )
             .values(archived=True)
         )
-        return result.rowcount or 0
+        return cast(CursorResult[Any], result).rowcount or 0

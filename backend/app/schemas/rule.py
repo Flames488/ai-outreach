@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from flames_shared.enums import RuleOperator, RulePriorityTier
 from pydantic import BaseModel, ConfigDict
@@ -38,7 +39,7 @@ class ApplicationRuleRead(BaseModel):
     name: str
     description: str | None
     priority_tier: RulePriorityTier
-    condition: dict
+    condition: dict[str, Any]
     enabled: bool
     created_at: datetime
     updated_at: datetime

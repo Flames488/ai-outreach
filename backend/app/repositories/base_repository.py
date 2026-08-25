@@ -37,7 +37,7 @@ class BaseRepository(Generic[ModelT]):
     def _base_query(self) -> Select[tuple[ModelT]]:
         query = select(self.model)
         if issubclass(self.model, SoftDeleteMixin):
-            query = query.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
+            query = query.where(self.model.deleted_at.is_(None))
         return query
 
     async def get(self, id: uuid.UUID) -> ModelT | None:
@@ -57,7 +57,7 @@ class BaseRepository(Generic[ModelT]):
     async def count(self, **filters: Any) -> int:
         query = select(func.count()).select_from(self.model)
         if issubclass(self.model, SoftDeleteMixin):
-            query = query.where(self.model.deleted_at.is_(None))  # type: ignore[attr-defined]
+            query = query.where(self.model.deleted_at.is_(None))
         for key, value in filters.items():
             query = query.where(getattr(self.model, key) == value)
         result = await self.db.execute(query)
@@ -83,5 +83,5 @@ class BaseRepository(Generic[ModelT]):
             raise TypeError(f"{self.model.__name__} does not support soft delete")
         instance = await self.get(id)
         if instance is not None:
-            instance.deleted_at = datetime.now(UTC)  # type: ignore[attr-defined]
+            instance.deleted_at = datetime.now(UTC)
             await self.db.flush()

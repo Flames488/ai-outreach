@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from typing import Any
 
 from flames_shared.enums import TelegramDirection
 from sqlalchemy import DateTime, ForeignKey, String, func
@@ -27,5 +28,5 @@ class TelegramMessage(UUIDPrimaryKeyMixin, Base):
         SqlEnum(TelegramDirection, name="telegram_direction", native_enum=True)
     )
     command: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

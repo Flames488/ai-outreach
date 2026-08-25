@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 from flames_shared.enums import UserRole
 from pydantic import BaseModel, ConfigDict
@@ -25,13 +26,13 @@ class UserProfileRead(BaseModel):
     visa_sponsorship_needed: bool | None
     expected_salary: float | None
     notice_period: str | None
-    education: list | None
-    certifications: list | None
-    languages: list | None
+    education: list[Any] | None
+    certifications: list[Any] | None
+    languages: list[Any] | None
     professional_summary: str | None
-    skills: list | None
-    desired_titles: list | None
-    notable_projects: list | None
+    skills: list[Any] | None
+    desired_titles: list[Any] | None
+    notable_projects: list[Any] | None
 
 
 class UserRead(BaseModel):
@@ -61,10 +62,10 @@ class UserProfileUpdate(BaseModel):
     visa_sponsorship_needed: bool | None = None
     expected_salary: float | None = None
     notice_period: str | None = None
-    education: list | None = None
-    certifications: list | None = None
-    languages: list | None = None
+    education: list[Any] | None = None
+    certifications: list[Any] | None = None
+    languages: list[Any] | None = None
     professional_summary: str | None = None
-    skills: list | None = None
-    desired_titles: list | None = None
-    notable_projects: list | None = None
+    skills: list[Any] | None = None
+    desired_titles: list[Any] | None = None
+    notable_projects: list[Any] | None = None

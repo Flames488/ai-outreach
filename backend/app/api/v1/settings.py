@@ -4,7 +4,7 @@ boot-time thresholds. `GET /settings` / `POST /settings` per Phase 2 §11.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -64,12 +64,12 @@ async def get_settings_route(
     return SuccessResponse(message="Settings retrieved successfully.", data=data)
 
 
-@router.post("", response_model=SuccessResponse[dict])
+@router.post("", response_model=SuccessResponse[dict[str, Any]])
 async def update_settings_route(
     body: FeatureFlagUpdate,
     _: Annotated[User, Depends(get_current_user)],
     feature_flags: Annotated[FeatureFlagService, Depends(get_feature_flag_service_dep)],
-) -> SuccessResponse[dict]:
+) -> SuccessResponse[dict[str, Any]]:
     """Updates one feature flag. Scheduling times remain boot-time only
     this phase (Phase 2 §18: "requires a config change and worker
     restart... fully dynamic rescheduling is a nice-to-have, not required

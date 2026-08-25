@@ -7,7 +7,7 @@ the general API limit (Phase 2 §07) to slow down credential stuffing.
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
@@ -57,10 +57,10 @@ async def refresh(
     return SuccessResponse(message="Token refreshed successfully.", data=token_pair)
 
 
-@router.post("/logout", response_model=SuccessResponse[dict])
+@router.post("/logout", response_model=SuccessResponse[dict[str, Any]])
 async def logout(
     body: RefreshRequest, db: Annotated[AsyncSession, Depends(get_db)]
-) -> SuccessResponse[dict]:
+) -> SuccessResponse[dict[str, Any]]:
     """Deletes the refresh token row — invalidates it immediately, no
     waiting for expiry."""
     auth_service: AuthService = get_auth_service(db)

@@ -13,7 +13,12 @@ from flames_shared.enums import ApplicationStatus, ErrorCode
 from app.api.deps import get_application_service_dep, get_current_user
 from app.core.exceptions import FlamesAPIError
 from app.models.user import User
-from app.schemas.application import ApplicationCreate, ApplicationDetail, ApplicationRead
+from app.schemas.application import (
+    ApplicationCreate,
+    ApplicationDetail,
+    ApplicationRead,
+    TimelineEvent,
+)
 from app.schemas.envelope import SuccessResponse
 from app.services.application_service import ApplicationService
 
@@ -68,12 +73,12 @@ async def get_application(
     detail = ApplicationDetail(
         **ApplicationRead.model_validate(application).model_dump(),
         timeline=[
-            {
-                "action": entry.action,
-                "old_value": entry.old_value,
-                "new_value": entry.new_value,
-                "created_at": entry.created_at,
-            }
+            TimelineEvent(
+                action=entry.action,
+                old_value=entry.old_value,
+                new_value=entry.new_value,
+                created_at=entry.created_at,
+            )
             for entry in timeline
         ],
     )

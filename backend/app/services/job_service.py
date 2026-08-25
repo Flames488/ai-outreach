@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.job import Job
 from app.providers.base import Provider
 from app.providers.mapping import standard_job_to_job_posting
-from app.providers.models import SearchParams
+from app.providers.models import SearchParams, StandardJob
 from app.providers.registry import get_enabled_providers
 from app.repositories.job_repository import JobRepository
 from app.repositories.provider_log_repository import ProviderLogRepository
@@ -116,7 +116,7 @@ class JobService:
 
     @staticmethod
     @async_retry_with_backoff(max_attempts=3, base_delay_seconds=2.0)
-    async def _fetch_from_provider(provider: Provider, params: SearchParams) -> list:
+    async def _fetch_from_provider(provider: Provider, params: SearchParams) -> list[StandardJob]:
         return await provider.fetch_jobs(params)
 
     async def _log_provider_call(self, provider: str, *, success: bool, detail: str) -> None:

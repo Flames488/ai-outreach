@@ -23,7 +23,7 @@ from app.gmail.interface import GmailClientInterface
 class GmailClient(GmailClientInterface):
     def __init__(self, refresh_token: str) -> None:
         settings = get_settings()
-        credentials = Credentials(
+        credentials = Credentials(  # type: ignore[no-untyped-call]
             token=None,
             refresh_token=refresh_token,
             token_uri="https://oauth2.googleapis.com/token",
