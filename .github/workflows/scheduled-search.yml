@@ -36,19 +36,42 @@ jobs:
 
           token=$(python3 -c "import sys,json; print(json.load(sys.stdin)['data']['access_token'])" <<< "$login_body")
 
-          search_response=$(curl -s -w '\n%{http_code}' -X POST "${FLAMES_API_URL}/jobs/search-sync" \
-            -H "Authorization: Bearer ${token}" \
-            --max-time 280)
-          search_status=$(tail -n1 <<< "$search_response")
-          search_body=$(sed '$d' <<< "$search_response")
+          # /jobs/search-sync can legitimately run for minutes (Phase 2 §72),
+          # but Render's free-tier proxy kills requests that sit idle past
+          # ~100s, returning a 502/503/504 well before our own --max-time
+          # hits. The route is designed to be safely re-called — it only
+          # ever acts on jobs it hasn't processed yet — so retry on a
+          # gateway error instead of failing the whole run; any other
+          # status (auth, a real application error) fails immediately
+          # since a retry won't fix it.
+          max_attempts=5
+          for attempt in $(seq 1 "$max_attempts"); do
+            search_response=$(curl -s -w '\n%{http_code}' -X POST "${FLAMES_API_URL}/jobs/search-sync" \
+              -H "Authorization: Bearer ${token}" \
+              --max-time 280)
+            search_status=$(tail -n1 <<< "$search_response")
+            search_body=$(sed '$d' <<< "$search_response")
 
-          echo "search-sync responded with HTTP $search_status:"
-          echo "$search_body"
+            echo "search-sync attempt ${attempt}/${max_attempts} responded with HTTP $search_status:"
+            echo "$search_body"
 
-          if [ "$search_status" -lt 200 ] || [ "$search_status" -ge 300 ]; then
-            echo "::error::search-sync failed with HTTP $search_status"
-            exit 1
-          fi
+            if [ "$search_status" -ge 200 ] && [ "$search_status" -lt 300 ]; then
+              exit 0
+            fi
+
+            case "$search_status" in
+              502|503|504|000)
+                echo "search-sync attempt ${attempt}/${max_attempts} hit a gateway error ($search_status); retrying..." >&2
+                sleep 5
+                ;;
+              *)
+                echo "::error::search-sync failed with HTTP $search_status (not a gateway error; not retrying)"
+                exit 1
+                ;;
+            esac
+          done
+          echo "::error::search-sync did not succeed after ${max_attempts} attempts"
+          exit 1
         env:
           FLAMES_API_URL: ${{ secrets.FLAMES_API_URL }}
           FLAMES_EMAIL: ${{ secrets.FLAMES_EMAIL }}
